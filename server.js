@@ -119,7 +119,15 @@ app.use(express.static('public'));
 app.get('/api/eims/status', async (_q, r) => {
   try {
     const [k, s] = await Promise.all([eims('GET', '/api-keys/current'), eims('GET', '/source-systems')]);
-    r.json({ ok: k.status === 200, key: k.body && k.body.data, sources: s.body && s.body.data, error: k.status === 200 ? null : errText(k) });
+    const store = {
+      name: process.env.RESTAURANT_NAME || 'Addis Bistro & Lounge',
+      legalName: (k.body && k.body.data && k.body.data.company && k.body.data.company.legalName) || 'CLICKADDIS IT SOLUTION PLC',
+      tin: (k.body && k.body.data && k.body.data.company && k.body.data.company.tin) || '0101969836',
+      vatNumber: process.env.RESTAURANT_VAT || '43256663343256663322',
+      phone: process.env.RESTAURANT_PHONE || '+251 937 609 277',
+      address: process.env.RESTAURANT_ADDRESS || 'Kirkos Sub-City, Bole Road, Addis Ababa',
+    };
+    r.json({ ok: k.status === 200, key: k.body && k.body.data, sources: s.body && s.body.data, store, error: k.status === 200 ? null : errText(k) });
   } catch (e) { r.json({ ok: false, error: e.message }); }
 });
 app.get('/api/lookups', async (_q, r) => { const x = await eims('GET', '/lookups'); r.status(x.status).json(x.body); });

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restaurant POS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Restaurant POS</h1>
+  <nav>
+    <button class="tab on" data-view="till">Till</button>
+    <button class="tab" data-view="orders">Orders</button>
+  </nav>
+  <span id="eimsBadge" class="pill s-PENDING">Checking EIMS…</span>
+</header>
+
+<main id="till" class="view">
+  <section class="menu">
+    <div id="cats" class="cats"></div>
+    <div id="grid" class="grid"></div>
+  </section>
+
+  <aside class="cart">
+    <h2>Current order</h2>
+    <ul id="lines"></ul>
+    <dl class="totals">
+      <div><dt>Subtotal</dt><dd id="sub">0.00</dd></div>
+      <div><dt>VAT 15%</dt><dd id="vat">0.00</dd></div>
+      <div class="grand"><dt>Total (ETB)</dt><dd id="tot">0.00</dd></div>
+    </dl>
+
+    <div class="fields">
+      <label>Table <input id="table" placeholder="e.g. 4"></label>
+      <label>Cashier <input id="cashier" placeholder="Your name"></label>
+      <label>Payment <select id="pay"><option>CASH</option></select></label>
+    </div>
+    <label class="check"><input type="checkbox" id="b2b"> Customer needs a tax invoice</label>
+    <div id="b2bFields" class="fields hidden">
+      <label>Customer TIN <input id="tin" inputmode="numeric" placeholder="10 digits"></label>
+      <label>Customer name <input id="cname"></label>
+      <label>VAT number (optional) <input id="vatno"></label>
+    </div>
+
+    <button id="charge" class="primary" disabled>Charge and register</button>
+    <div id="result" class="result hidden"></div>
+  </aside>
+</main>
+
+<main id="orders" class="view hidden">
+  <table>
+    <thead><tr><th>Order</th><th>Table</th><th>Total</th><th>EIMS</th><th></th></tr></thead>
+    <tbody id="orderRows"></tbody>
+  </table>
+  <p id="noOrders" class="empty hidden">No orders yet. Charge one from the Till.</p>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

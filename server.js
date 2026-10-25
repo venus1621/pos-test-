@@ -18,10 +18,25 @@ const info = (inv, error) => ({
 function invoicePayload(o, sourceSystemId, extra = {}) {
   const b2b = !!(o.customer && o.customer.tin);
   const c = o.customer || {};
+  const buyer = b2b
+    ? {
+        tin: c.tin,
+        legalName: c.legalName,
+        ...(c.vatNumber && { vatNumber: c.vatNumber }),
+        ...(c.phone && { phone: c.phone }),
+        ...(c.idType && { idType: c.idType, idNumber: c.idNumber || '00000000' }),
+      }
+    : {
+        legalName: c.legalName || 'Consumer',
+        idType: c.idType || 'NID',
+        idNumber: c.idNumber || '00000000',
+        ...(c.phone && { phone: c.phone }),
+      };
+
   return {
     sourceSystemId, externalRef: o.number, docType: 'INV', transactionType: b2b ? 'B2B' : 'B2C',
     paymentMode: o.paymentMode,
-    ...(b2b && { buyer: { tin: c.tin, legalName: c.legalName, ...(c.vatNumber && { vatNumber: c.vatNumber }), ...(c.phone && { phone: c.phone }) } }),
+    buyer,
     items: o.items.map(i => ({
       natureOfSupplies: i.nature, itemCode: i.code, description: i.name,
       unitPrice: i.price.toFixed(2), quantity: String(i.qty), unit: 'PCS', taxCode: i.taxCode,
@@ -39,9 +54,14 @@ async function pushInvoice(payload) {
     r = await eims('POST', `/invoices/${inv.id}/reopen`);
     if (r.status === 200) inv = r.body.data;
   }
-  if (inv.status === 'DRAFT') r = await eims('POST', `/invoices/${inv.id}/finalize`, { submit: 'now' });
-  else if (inv.status === 'FINAL') r = await eims('POST', `/invoices/${inv.id}/submit`, { mode: 'now' });
-  else r = { status: 200, body: { data: inv } };
+  if (inv.status === 'DRAFT') {
+    await eims('PATCH', `/invoices/${inv.id}`, payload);
+    r = await eims('POST', `/invoices/${inv.id}/finalize`, { submit: 'now' });
+  } else if (inv.status === 'FINAL') {
+    r = await eims('POST', `/invoices/${inv.id}/submit`, { mode: 'now' });
+  } else {
+    r = { status: 200, body: { data: inv } };
+  }
   // 200 registered | 422 refused (data present) | 202 in progress (RETRY) -> all carry the invoice
   if (r.body && r.body.data) inv = r.body.data;
   return { inv, error: r.body && r.body.error ? errText(r) : null };
@@ -124,7 +144,7 @@ app.post('/api/orders', async (q, r) => {
   const { n } = await Counter.findOneAndUpdate({ _id: 'order' }, { $inc: { n: 1 } }, { upsert: true, new: true });
   const o = await Order.create({
     number: `${process.env.ORDER_PREFIX || 'POS'}-${String(n).padStart(6, '0')}`, // this is the externalRef: never change it
-    table, cashierName, paymentMode: paymentMode || 'CASH', customer: customer && customer.tin ? customer : undefined,
+    table, cashierName, paymentMode: paymentMode || 'CASH', customer: customer && (customer.tin || customer.legalName) ? customer : undefined,
     items: lines, tax, total: sub + tax, eims: { status: 'PENDING' },
   });
   r.status(201).json(await syncOrder(o));

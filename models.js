@@ -14,7 +14,7 @@ const docState = { invoiceId: String, status: String, documentNumber: String, ir
 const Order = model('Order', new Schema({
   number: { type: String, unique: true },   // also used as EIMS externalRef (idempotency key)
   table: String, cashierName: String, paymentMode: { type: String, default: 'CASH' },
-  customer: { tin: String, legalName: String, vatNumber: String, phone: String },
+  customer: { tin: String, legalName: String, vatNumber: String, phone: String, idType: String, idNumber: String },
   items: [{ code: String, name: String, price: Number, qty: Number, taxCode: String, nature: String }],
   total: Number, tax: Number,
   eims: docState,        // the invoice
